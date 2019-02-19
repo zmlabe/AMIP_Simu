@@ -1,5 +1,5 @@
 """
-Function removes the linear trend at each grid point for the period of 
+Functions remove the linear trend at each grid point for the period of 
 1979-2016.
  
 Notes
@@ -10,6 +10,7 @@ Notes
 Usage
 -----
     detrendData(datavar,timeperiod)
+    detrendDataR(datavar,timeperiod)
 """
 
 def detrendData(datavar,level,timeperiod):
@@ -27,8 +28,8 @@ def detrendData(datavar,level,timeperiod):
     
     Returns
     -------
-    datavardt : 4d numpy array or 5d numpy array 
-        [year,month,lat,lon] or [year,month,level,lat,lon]
+    datavardt : 5d numpy array or 6d numpy array 
+        [ensemble,year,month,lat,lon] or [ensemble,year,month,level,lat,lon]
         
 
     Usage
@@ -121,4 +122,114 @@ def detrendData(datavar,level,timeperiod):
     del datavar
     
     print('\n>>> Completed: Finished detrendData function!')
+    return datavardt
+
+###############################################################################
+
+def detrendDataR(datavar,level,timeperiod):
+    """
+    Function removes linear trend from reanalysis data
+
+    Parameters
+    ----------
+    datavar : 4d numpy array or 5d numpy array 
+        [year,month,lat,lon] or [year,month,level,lat,lon]
+    level : string
+        Height of variable (surface or profile)
+    timeperiod : string
+        daily or monthly
+    
+    Returns
+    -------
+    datavardt : 4d numpy array or 5d numpy array 
+        [year,month,lat,lon] or [year,month,level,lat,lon]
+        
+    Usage
+    -----
+    datavardt = detrendDataR(datavar,level,timeperiod)
+    """
+    print('\n>>> Using detrendData function! \n')
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Import modules
+    import numpy as np
+    import scipy.stats as sts
+    
+    ### Detrend data array
+    if level == 'surface':
+        x = np.arange(datavar.shape[0])
+        
+        slopes = np.empty((datavar.shape[1],datavar.shape[2],datavar.shape[3]))
+        intercepts = np.empty((datavar.shape[1],datavar.shape[2],
+                               datavar.shape[3]))
+        for mo in range(datavar.shape[1]):
+            print('Completed: detrended -- Month %s --!' % (mo+1))
+            for i in range(datavar.shape[2]):
+                for j in range(datavar.shape[3]):
+                    mask = np.isfinite(datavar[:,mo,i,j])
+                    y = datavar[:,mo,i,j]
+                    
+                    if np.sum(mask) == y.shape[0]:
+                        xx = x
+                        yy = y
+                    else:
+                        xx = x[mask]
+                        yy = y[mask]
+                    
+                    if np.isfinite(np.nanmean(yy)):
+                        slopes[mo,i,j],intercepts[mo,i,j], \
+                        r_value,p_value,std_err = sts.linregress(xx,yy)
+                    else:
+                        slopes[mo,i,j] = np.nan
+                        intercepts[mo,i,j] = np.nan
+        print('Completed: Detrended data for each grid point!')
+                            
+        datavardt = np.empty(datavar.shape)
+        for yr in range(datavar.shape[0]):
+            datavardt[yr,:,:,:] = datavar[yr,:,:,:] - \
+                                    (slopes*x[yr] + intercepts)
+                                
+    elif level == 'profile':
+        x = np.arange(datavar.shape[0])
+        
+        slopes = np.empty((datavar.shape[1],datavar.shape[2],
+                          datavar.shape[3],datavar.shape[4]))
+        intercepts = np.empty((datavar.shape[1],datavar.shape[2],
+                      datavar.shape[3],datavar.shape[4]))
+        for mo in range(datavar.shape[1]):
+            print('Completed: detrended -- Month %s --!' % (mo+1))
+            for le in range(datavar.shape[2]):
+                print('Completed: detrended Level %s!' % (le+1))
+                for i in range(datavar.shape[3]):
+                    for j in range(datavar.shape[4]):
+                        mask = np.isfinite(datavar[:,mo,le,i,j])
+                        y = datavar[:,mo,le,i,j]
+                        
+                        if np.sum(mask) == y.shape[0]:
+                            xx = x
+                            yy = y
+                        else:
+                            xx = x[mask]
+                            yy = y[mask]
+                        
+                        if np.isfinite(np.nanmean(yy)):
+                            slopes[mo,le,i,j],intercepts[mo,le,i,j], \
+                            r_value,p_value,std_err= sts.linregress(xx,yy)
+                        else:
+                            slopes[mo,le,i,j] = np.nan
+                            intercepts[mo,le,i,j] = np.nan
+        print('Completed: Detrended data for each grid point!')
+                            
+        datavardt = np.empty(datavar.shape)
+        for yr in range(datavar.shape[1]):
+            datavardt[yr,:,:,:,:] = datavar[yr,:,:,:,:] - \
+                                    (slopes*x[yr] + intercepts)        
+    else:
+        print(ValueError('Selected wrong height - (surface or profile!)!')) 
+
+    ### Save memory
+    del datavar
+    
+    print('\n>>> Completed: Finished detrendDataR function!')
     return datavardt
