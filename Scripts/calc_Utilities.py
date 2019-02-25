@@ -1,10 +1,10 @@
 """
-Functions are useful untilities for SITperturb experiments
+Functions are useful untilities for the AMIP Project
  
 Notes
 -----
     Author : Zachary Labe
-    Date   : 13 August 2017
+    Date   : 20 February 2019
     
 Usage
 -----
@@ -16,6 +16,8 @@ Usage
     [6] calc_RMSE(varx,vary,lats,lons,weight)
     [7] calc_spatialCorrHeight(varx,vary,lats,lons,weight)
     [8] calc_spatialCorrHeightLev(varx,vary,lats,lons,weight,levelq)
+    [9] detrendData(datavar,years,level,yearmn,yearmx)
+    [10] detrendDataR(datavar,years,level,yearmn,yearmx)
 """
 
 def calcDecJan(varx,vary,lat,lon,level,levsq):
@@ -115,15 +117,13 @@ def calcDecJan(varx,vary,lat,lon,level,levsq):
 ###############################################################################
 ###############################################################################
 
-def calcDecJanFeb(varx,vary,lat,lon,level,levsq):
+def calcDecJanFeb(varx,lat,lon,level,levsq):
     """
     Function calculates average for December-January-February
 
     Parameters
     ----------
     varx : 4d array or 5d array
-        [year,month,lat,lon] or [year,month,lev,lat,lon]
-    vary : 4d array or 5d array
         [year,month,lat,lon] or [year,month,lev,lat,lon]
     lat : 1d numpy array
         latitudes
@@ -138,12 +138,10 @@ def calcDecJanFeb(varx,vary,lat,lon,level,levsq):
     -------
     varx_djf : 3d array or 4d array
         [year,lat,lon] or [year,lev,lat,lon]
-    vary_djf : 3d array
-        [year,lat,lon] or [year,lev,lat,lon]
 
     Usage
     -----
-    varx_djf,vary_djf = calcDecJanFeb(varx,vary,lat,lon,level,levsq)
+    varx_djf = calcDecJanFeb(varx,vary,lat,lon,level,levsq)
     """
     print('\n>>> Using calcDecJan function!')
     
@@ -155,64 +153,43 @@ def calcDecJanFeb(varx,vary,lat,lon,level,levsq):
         varxravel = np.reshape(varx.copy(),
                            (int(varx.shape[0]*12),
                             int(lat.shape[0]),int(lon.shape[0])))
-        varyravel = np.reshape(vary.copy(),
-                               (int(vary.shape[0]*12),
-                                int(lat.shape[0]),int(lon.shape[0]))) 
                                
-        varx_djf = np.empty((varx.shape[0]-1,lat.shape[0],lon.shape[0]))
-        vary_djf = np.empty((vary.shape[0]-1,lat.shape[0],lon.shape[0]) )                 
+        varx_djf = np.empty((varx.shape[0]-1,lat.shape[0],lon.shape[0]))               
         for i in range(0,varxravel.shape[0]-12,12):
             counter = 0
             if i >= 12:
                 counter = i//12
-            djfappendh1 = np.append(varxravel[11+i,:,:],varxravel[12+i,:,:])
-            djfappendf1 = np.append(varyravel[11+i,:,:],varyravel[12+i,:,:])  
+            djfappendh1 = np.append(varxravel[11+i,:,:],varxravel[12+i,:,:]) 
             djfappendh = np.append(djfappendh1,varxravel[13+i,:,:])
-            djfappendf = np.append(djfappendf1,varyravel[13+i,:,:]) 
             varx_djf[counter,:,:] = np.nanmean(np.reshape(djfappendh,
                                     (3,int(lat.shape[0]),int(lon.shape[0]))),
                                     axis=0)                   
-            vary_djf[counter,:,:] = np.nanmean(np.reshape(djfappendf,
-                                    (3,int(lat.shape[0]),int(lon.shape[0]))),
-                                    axis=0)
     ### Reshape for 4d variables
     elif level == 'profile':
         varxravel = np.reshape(varx.copy(),
                            (int(varx.shape[0]*12.),levsq,
                             int(lat.shape[0]),int(lon.shape[0])))
-        varyravel = np.reshape(vary.copy(),
-                               (int(vary.shape[0]*12.),levsq,
-                                int(lat.shape[0]),int(lon.shape[0]))) 
                                
         varx_djf = np.empty((int(varx.shape[0]-1),levsq,
-                            int(lat.shape[0]),int(lon.shape[0])))
-        vary_djf = np.empty((int(vary.shape[0]-1),levsq,
-                            int(lat.shape[0]),int(lon.shape[0])) )                 
+                            int(lat.shape[0]),int(lon.shape[0])))               
         for i in range(0,varxravel.shape[0]-12,12):
             counter = 0
             if i >= 12:
                 counter = i//12
             djfappendh1 = np.append(varxravel[11+i,:,:,:],
                                   varxravel[12+i,:,:,:])
-            djfappendf1 = np.append(varyravel[11+i,:,:,:],
-                                  varyravel[12+i,:,:,:]) 
             djfappendh = np.append(djfappendh1,
-                                  varxravel[13+i,:,:,:])
-            djfappendf = np.append(djfappendf1,
-                                  varyravel[13+i,:,:,:])  
+                                  varxravel[13+i,:,:,:]) 
             varx_djf[counter,:,:] = np.nanmean(np.reshape(djfappendh,
                                     (3,levsq,int(lat.shape[0]),
-                                     int(lon.shape[0]))),axis=0)                   
-            vary_djf[counter,:,:] = np.nanmean(np.reshape(djfappendf,
-                                    (3,levsq,int(lat.shape[0]),
-                                     int(lon.shape[0]))),axis=0)                               
+                                     int(lon.shape[0]))),axis=0)                                             
     else:
         print(ValueError('Selected wrong height - (surface or profile!)!'))    
                                 
     print('Completed: Organized data by months (DJF)!')
 
     print('*Completed: Finished calcDecJanFeb function!')
-    return varx_djf,vary_djf
+    return varx_djf
 
 ###############################################################################
 ###############################################################################
@@ -619,3 +596,239 @@ def calc_spatialCorrHeightLev(varx,vary,levs,lons,weight,levelq):
     
     print('*Completed: Finished calc_SpatialCorrHeightLev function!')
     return corrcoef
+
+###############################################################################
+###############################################################################
+###############################################################################
+
+def detrendData(datavar,years,level,yearmn,yearmx):
+    """
+    Function removes linear trend
+
+    Parameters
+    ----------
+    datavar : 4d numpy array or 5d numpy array 
+        [ensemble,year,lat,lon] or [ensemble,year,level,lat,lon]
+    years : 1d numpy array
+        [years]
+    level : string
+        Height of variable (surface or profile)
+    yearmn : integer
+        First year
+    yearmx : integer
+        Last year
+    
+    Returns
+    -------
+    datavardt : 4d numpy array or 5d numpy array 
+        [ensemble,year,lat,lon] or [ensemble,year,level,lat,lon]
+        
+
+    Usage
+    -----
+    datavardt = detrendData(datavar,years,level,yearmn,yearmx)
+    """
+    print('\n>>> Using detrendData function! \n')
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Import modules
+    import numpy as np
+    import scipy.stats as sts
+
+    ### Slice time period
+    sliceq = np.where((years >= yearmn) & (years <= yearmx))[0]
+    datavar = datavar[:,sliceq,:,:]
+    
+    ### Detrend data array
+    if level == 'surface':
+        x = np.arange(datavar.shape[1])
+        
+        slopes = np.empty((datavar.shape[0],datavar.shape[2],datavar.shape[3]))
+        intercepts = np.empty((datavar.shape[0],datavar.shape[2],
+                               datavar.shape[3]))
+        for ens in range(datavar.shape[0]):
+            print('-- Detrended data for ensemble member -- #%s!' % (ens+1))
+            for i in range(datavar.shape[2]):
+                for j in range(datavar.shape[3]):
+                    mask = np.isfinite(datavar[ens,:,i,j])
+                    y = datavar[ens,:,i,j]
+                    
+                    if np.sum(mask) == y.shape[0]:
+                        xx = x
+                        yy = y
+                    else:
+                        xx = x[mask]
+                        yy = y[mask]
+                    
+                    if np.isfinite(np.nanmean(yy)):
+                        slopes[ens,i,j],intercepts[ens,i,j], \
+                        r_value,p_value,std_err = sts.linregress(xx,yy)
+                    else:
+                        slopes[ens,i,j] = np.nan
+                        intercepts[ens,i,j] = np.nan
+        print('Completed: Detrended data for each grid point!')
+                                
+    print('\n>>> Completed: Finished detrendData function!')
+    return slopes
+
+###############################################################################
+###############################################################################
+###############################################################################
+
+def detrendDataR(datavar,years,level,yearmn,yearmx):
+    """
+    Function removes linear trend from reanalysis data
+
+    Parameters
+    ----------
+    datavar : 4d numpy array or 5d numpy array 
+        [year,month,lat,lon] or [year,month,level,lat,lon]
+    years : 1d numpy array
+        [years]
+    level : string
+        Height of variable (surface or profile)
+    yearmn : integer
+        First year
+    yearmx : integer
+        Last year
+    
+    Returns
+    -------
+    datavardt : 4d numpy array or 5d numpy array 
+        [year,month,lat,lon] or [year,month,level,lat,lon]
+        
+    Usage
+    -----
+    datavardt = detrendDataR(datavar,years,level,yearmn,yearmx)
+    """
+    print('\n>>> Using detrendData function! \n')
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Import modules
+    import numpy as np
+    import scipy.stats as sts
+    
+    ### Slice time period
+    sliceq = np.where((years >= yearmn) & (years <= yearmx))[0]
+    datavar = datavar[sliceq,:,:]
+    
+    ### Detrend data array
+    if level == 'surface':
+        x = np.arange(datavar.shape[0])
+        
+        slopes = np.empty((datavar.shape[1],datavar.shape[2]))
+        intercepts = np.empty((datavar.shape[1],datavar.shape[2]))
+        for i in range(datavar.shape[1]):
+            for j in range(datavar.shape[2]):
+                mask = np.isfinite(datavar[:,i,j])
+                y = datavar[:,i,j]
+                
+                if np.sum(mask) == y.shape[0]:
+                    xx = x
+                    yy = y
+                else:
+                    xx = x[mask]
+                    yy = y[mask]
+                
+                if np.isfinite(np.nanmean(yy)):
+                    slopes[i,j],intercepts[i,j], \
+                    r_value,p_value,std_err = sts.linregress(xx,yy)
+                else:
+                    slopes[i,j] = np.nan
+                    intercepts[i,j] = np.nan
+        print('Completed: Detrended data for each grid point!')
+
+    print('\n>>> Completed: Finished detrendDataR function!')
+    return slopes
+
+###############################################################################
+###############################################################################
+###############################################################################
+
+def mk_test(x, alpha):
+    """
+    This function is derived from code originally posted by Sat Kumar Tomer
+    (satkumartomer@gmail.com)
+    See also: http://vsp.pnnl.gov/help/Vsample/Design_Trend_Mann_Kendall.htm
+    The purpose of the Mann-Kendall (MK) test (Mann 1945, Kendall 1975, Gilbert
+    1987) is to statistically assess if there is a monotonic upward or downward
+    trend of the variable of interest over time. A monotonic upward (downward)
+    trend means that the variable consistently increases (decreases) through
+    time, but the trend may or may not be linear. The MK test can be used in
+    place of a parametric linear regression analysis, which can be used to test
+    if the slope of the estimated linear regression line is different from
+    zero. The regression analysis requires that the residuals from the fitted
+    regression line be normally distributed; an assumption not required by the
+    MK test, that is, the MK test is a non-parametric (distribution-free) test.
+    Hirsch, Slack and Smith (1982, page 107) indicate that the MK test is best
+    viewed as an exploratory analysis and is most appropriately used to
+    identify stations where changes are significant or of large magnitude and
+    to quantify these findings.
+    Input:
+        x:   a vector of data
+        alpha: significance level (0.05 default)
+    Output:
+        trend: tells the trend (increasing, decreasing or no trend)
+        h: True (if trend is present) or False (if trend is absence)
+        p: p value of the significance test
+        z: normalized test statistics
+    Examples
+    --------
+      >>> x = np.random.rand(100)
+      >>> trend,h,p,z = mk_test(x,0.05)
+    """
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Import modules
+    import numpy as np
+    from scipy.stats import norm
+    
+    n = len(x)
+
+    # calculate S
+    s = 0
+    for k in range(n-1):
+        for j in range(k+1, n):
+            s += np.sign(x[j] - x[k])
+
+    # calculate the unique data
+    unique_x = np.unique(x)
+    g = len(unique_x)
+
+    # calculate the var(s)
+    if n == g:  # there is no tie
+        var_s = (n*(n-1)*(2*n+5))/18
+    else:  # there are some ties in data
+        tp = np.zeros(unique_x.shape)
+        for i in range(len(unique_x)):
+            tp[i] = sum(x == unique_x[i])
+        var_s = (n*(n-1)*(2*n+5) - np.sum(tp*(tp-1)*(2*tp+5)))/18
+
+    if s > 0:
+        z = (s - 1)/np.sqrt(var_s)
+    elif s < 0:
+        z = (s + 1)/np.sqrt(var_s)
+    else: # s == 0:
+        z = 0
+
+    # calculate the p_value
+    p = 2*(1-norm.cdf(abs(z)))  # two tail test
+    h = abs(z) > norm.ppf(1-alpha/2)
+
+    if (z < 0) and h:
+        trend = 'decreasing'
+    elif (z > 0) and h:
+        trend = 'increasing'
+    else:
+        trend = 'no trend'
+        
+    ### Significant at 95% confidence level
+    if p >= alpha:
+        p = np.nan
+    elif p < alpha:
+        p = 1.
+
+    return trend, h, p, z

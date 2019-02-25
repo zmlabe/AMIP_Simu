@@ -19,7 +19,7 @@ def detrendData(datavar,level,timeperiod):
 
     Parameters
     ----------
-    datavar : 4d numpy array or 5d numpy array 
+    datavar : 5d numpy array or 6d numpy array 
         [year,month,lat,lon] or [year,month,level,lat,lon]
     level : string
         Height of variable (surface or profile)
@@ -30,7 +30,6 @@ def detrendData(datavar,level,timeperiod):
     -------
     datavardt : 5d numpy array or 6d numpy array 
         [ensemble,year,month,lat,lon] or [ensemble,year,month,level,lat,lon]
-        
 
     Usage
     -----
@@ -76,9 +75,12 @@ def detrendData(datavar,level,timeperiod):
         print('Completed: Detrended data for each grid point!')
                             
         datavardt = np.empty(datavar.shape)
-        for yr in range(datavar.shape[1]):
-            datavardt[:,yr,:,:,:] = datavar[:,yr,:,:,:] - \
-                                    (slopes*x[yr] + intercepts)
+        for ens in range(datavar.shape[0]):
+            for yr in range(datavar.shape[1]):
+                for mo in range(datavar.shape[2]):
+                    datavardt[ens,yr,mo,:,:] = datavar[ens,yr,mo,:,:] - \
+                                        (slopes[ens,mo,:,:]*x[yr] + \
+                                         intercepts[ens,mo,:,:])
                                 
     elif level == 'profile':
         x = np.arange(datavar.shape[1])
@@ -187,8 +189,7 @@ def detrendDataR(datavar,level,timeperiod):
                             
         datavardt = np.empty(datavar.shape)
         for yr in range(datavar.shape[0]):
-            datavardt[yr,:,:,:] = datavar[yr,:,:,:] - \
-                                    (slopes*x[yr] + intercepts)
+            datavardt[yr,:,:,:] = datavar[yr,:,:,:] - (slopes*x[yr] + intercepts)
                                 
     elif level == 'profile':
         x = np.arange(datavar.shape[0])
