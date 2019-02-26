@@ -10,7 +10,8 @@ Notes
     
 Usage
 -----
-    readDataR(variable,level,detrend,sliceeq)
+    [1] readDataR(variable,level,detrend,sliceeq)
+    [2] readDataRMeans(variable)
 """
 
 def readDataR(variable,level,detrend,sliceeq):
@@ -37,8 +38,10 @@ def readDataR(variable,level,detrend,sliceeq):
         longitudes
     time : 1d numpy array
         standard time (months since 1979-1-1, 00:00:00)
-    var : 6d numpy array or 6d numpy array 
-        [ensemble,year,month,lat,lon] or [ensemble,year,month,level,lat,lon]
+    lev : 1d numpy array
+        levels (17)
+    var : 4d numpy array or 5d numpy array 
+        [year,month,lat,lon] or [year,month,level,lat,lon]
 
     Usage
     -----
@@ -210,6 +213,114 @@ def readDataR(variable,level,detrend,sliceeq):
     
     print('\n>>> Completed: Finished readDataR function!')
     return lat,lon,time,lev,var
+
+###############################################################################
+    
+def readDataRMeans(variable):
+    """
+    Function reads monthly data from ERA-Interim. Average
+    is taken over the polar cap (65-90, 0-360) and weighted 
+    by cosine of latitude. Variables are all 4d.
+
+    Parameters
+    ----------
+    variable : string
+        variable name to read        
+        
+    Returns
+    -------
+    lat : 1d numpy array
+        latitudes
+    lon : 1d numpy array
+        longitudes
+    lev : 1d numpy array
+        levels (17)
+    var : 3d numpy array
+        [year,month,lev]
+
+    Usage
+    -----
+    lat,lon,time,lev,var = readDataRMeans(variable)
+    """
+    print('\n>>> Using readDataRMeans function! \n')
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Import modules
+    import numpy as np
+    from netCDF4 import Dataset
+    import calc_Detrend as DT
+    
+    ### Declare knowns
+    months = 12
+    years = np.arange(1979,2016+1,1)
+    
+    ### Directory for experiments (remote server - Seley)
+    directorydata = '/seley/zlabe/ERAI/'
+    
+    ###########################################################################
+    ###########################################################################
+    dataq = Dataset(directorydata + 'TEMP_1979-2016.nc')
+    time = dataq.variables['time'][:]
+    lev = dataq.variables['level'][:]
+    lat = dataq.variables['latitude'][:]
+    lon = dataq.variables['longitude'][:]
+    dataq.close()
+    
+    ###########################################################################
+    ###########################################################################                 
+    varq = np.empty((time.shape[0],lev.shape[0]))
+    varq[:,:] = np.nan ### fill with nans
+    
+    ###########################################################################
+    ###########################################################################
+    ### Path name for file for each ensemble member
+    filename = directorydata + variable + '_mean_1979-2016.nc'
+                    
+    ###########################################################################
+    ###########################################################################
+    ### Read in Data
+    data = Dataset(filename,'r')
+    varq[:,:] = data.variables[variable][:]
+    data.close()
+        
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Reshape to split years and months
+    var = np.reshape(varq,(varq.shape[0]//12,months,lev.shape[0]))
+    
+    ### Save computer memory
+    del varq
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Convert units
+    if variable in ('TEMP','T2M'):
+        var = var - 273.15 # Kelvin to degrees Celsius 
+        print('Completed: Changed units (K to C)!')
+    elif variable == 'SWE':
+        var = var*1000. # Meters to Millimeters 
+        print('Completed: Changed units (m to mm)!')
+    elif variable in ('Z1000','Z850','Z700','Z500','Z300','Z200','Z50','Z30',
+                      'GEOP'):
+        var = var/9.80665 # m^2/s^2 divide by gravity m/s^2 to m
+        print('Completed: Changed units (m^2/s^2 to m)!')
+    elif variable == 'SLP':
+        var = var/100. # Pa to hPa
+        print('Completed: Changed units (Pa to hPa)!')
+
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################    
+    ### Missing data (fill value to nans)
+    var[np.where(var <= -8.99999987e+33)] = np.nan
+    var[np.where(var >= 8.99999987e+33)] = np.nan
+    print('Completed: Filled missing data to nan!')
+    
+    print('\n>>> Completed: Finished readDataRMeans function!')
+    return lat,lon,lev,var
         
 #### Test function -- no need to use    
 #variable = 'Z500'
@@ -218,6 +329,7 @@ def readDataR(variable,level,detrend,sliceeq):
 #sliceeq = False
 #    
 #lat,lon,time,lev,var = readDataR(variable,level,detrend,sliceeq)
+#lat,lon,lev,var = readDataRMeans('TEMP')
         
         
         

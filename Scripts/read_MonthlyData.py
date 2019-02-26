@@ -1,5 +1,5 @@
 """
-Script reads in monthly data from the 6 AMIP experiments (AMIP,AMS,AMQ,
+Functions read in monthly data from the 6 AMIP experiments (AMIP,AMS,AMQ,
 CSST,CSIC,AMQS). Data is available over the 1979-2016 period (38 years) and 
 sorted by month (12). The AMIP simulations use SC-WACCM4 with historical 
 forcings and RCP 4.5. The experiment with all forcings is called AMQS. Note 
@@ -12,7 +12,8 @@ Notes
     
 Usage
 -----
-    readDataM(variable,experiment,level,detrend,sliceeq)
+    [1] readDataM(variable,experiment,level,detrend,sliceeq)
+    [2] readDataMMeans(variable,experiment)
 """
 
 def readDataM(variable,experiment,level,detrend,sliceeq):
@@ -41,8 +42,10 @@ def readDataM(variable,experiment,level,detrend,sliceeq):
         longitudes
     time : 1d numpy array
         standard time (months since 1978-1-15, 00:00:00)
-    var : 4d numpy array or 5d numpy array 
-        [year,month,lat,lon] or [year,month,level,lat,lon]
+    lev : 1d numpy array
+        levels (17)
+    var : 5d numpy array or 6d numpy array 
+        [ensemble,year,month,lat,lon] or [ensemble,year,month,level,lat,lon]
 
     Usage
     -----
@@ -217,8 +220,118 @@ def readDataM(variable,experiment,level,detrend,sliceeq):
     
     print('\n>>> Completed: Finished readDataM function!')
     return lat,lon,time,lev,var
+
+###############################################################################
+
+def readDataMMeans(variable,experiment):
+    """
+    Function reads average monthly data from all 6 AMIP experiments. Average
+    is taken over the polar cap (65-90, 0-360) and weighted by cosine of 
+    latitude. Variables are all 4d.
+
+    Parameters
+    ----------
+    variable : string
+        variable name to read
+    experiment : string
+        experiment name (AMIP or AMS or AMQ or CSST or CSIC or AMQS)
         
-#### Test function -- no need to use    
+    Returns
+    -------
+    lat : 1d numpy array
+        latitudes
+    lon : 1d numpy array
+        longitudes
+    lev : 1d numpy array
+        levels (17)
+    var : 4d numpy array
+        [ensemble,year,month,level]
+
+    Usage
+    -----
+    lat,lon,lev,var = readDataMMeans(variable,experiment)
+    """
+    print('\n>>> Using readDataMMeans function! \n')
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Import modules
+    import numpy as np
+    from netCDF4 import Dataset
+    import calc_Detrend as DT
+    
+    ### Declare knowns
+    ensembles = 10
+    months = 12
+    years = np.arange(1979,2016+1,1)
+    
+    ### Directory for experiments (remote server - Seley)
+    directorydata = '/seley/zlabe/simu/'
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Read in 4d variable information
+    dataq = Dataset(directorydata + 'AMIP1/monthly/TEMP_1978-2016.nc')
+    time = dataq.variables['time'][12:]
+    lev = dataq.variables['level'][:]
+    lat = dataq.variables['latitude'][:]
+    lon = dataq.variables['longitude'][:]
+    dataq.close()
+    
+    ### Create empty variable
+    varq = np.empty((ensembles,time.shape[0],lev.shape[0]))
+    varq[:,:,:] = np.nan ### fill with nans
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Path name for file for each ensemble member
+    for i in range(ensembles):
+        filename = directorydata + '%s%s/' % (experiment,i+1) + \
+                    'monthly/' + variable + '_mean.nc'
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Read in variable data
+        data = Dataset(filename,'r')
+        varq[i,:,:] = data.variables[variable][12:468,:]
+        data.close()
+        print('Completed: Read data %s%s- %s!' % (experiment,
+                                                  i+1,variable))
+        
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Reshape to split years and months
+    var = np.reshape(varq,(ensembles,varq.shape[1]//12,months,lev.shape[0]))
+ 
+    ### Save computer memory
+    del varq
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    ### Convert units
+    if variable in ('TEMP','T2M'):
+        var = var - 273.15 # Kelvin to degrees Celsius 
+        print('Completed: Changed units (K to C)!')
+    elif variable == 'SWE':
+        var = var*1000. # Meters to Millimeters 
+        print('Completed: Changed units (m to mm)!')
+
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################    
+    ### Missing data (fill value to nans)
+    var[np.where(var <= -8.99999987e+33)] = np.nan
+    print('Completed: Filled missing data to nan!')
+    
+    print('\n>>> Completed: Finished readDataMMeans function!')
+    return lat,lon,lev,var
+        
+### Test functions -- no need to use    
 #variable = 'U200'
 #experiment = 'AMQ'
 #level = 'surface'
@@ -226,6 +339,10 @@ def readDataM(variable,experiment,level,detrend,sliceeq):
 #sliceeq = False
 #    
 #lat,lon,time,lev,var = readDataM(variable,experiment,level,detrend,sliceeq)
+#    
+#variable = 'U'
+#experiment = 'CSST'
+#lat,lon,lev,var = readDataMMeans(variable,experiment)
         
         
         
