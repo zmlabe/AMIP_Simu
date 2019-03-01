@@ -720,6 +720,7 @@ def detrendDataR(datavar,years,level,yearmn,yearmx):
         
         slopes = np.empty((datavar.shape[1],datavar.shape[2]))
         intercepts = np.empty((datavar.shape[1],datavar.shape[2]))
+        std_err = np.empty((datavar.shape[1],datavar.shape[2]))
         for i in range(datavar.shape[1]):
             for j in range(datavar.shape[2]):
                 mask = np.isfinite(datavar[:,i,j])
@@ -734,14 +735,14 @@ def detrendDataR(datavar,years,level,yearmn,yearmx):
                 
                 if np.isfinite(np.nanmean(yy)):
                     slopes[i,j],intercepts[i,j], \
-                    r_value,p_value,std_err = sts.linregress(xx,yy)
+                    r_value,p_value,std_err[i,j] = sts.linregress(xx,yy)
                 else:
                     slopes[i,j] = np.nan
                     intercepts[i,j] = np.nan
         print('Completed: Detrended data for each grid point!')
 
     print('\n>>> Completed: Finished detrendDataR function!')
-    return slopes
+    return slopes,std_err
 
 ###############################################################################
 ###############################################################################

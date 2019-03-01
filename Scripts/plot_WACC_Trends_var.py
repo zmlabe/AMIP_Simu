@@ -38,6 +38,7 @@ years = np.arange(year1,year2+1,1)
 ### Add parameters
 ensembles = 10
 su = [0,1,2,3,5,6,7]
+period = 'Annual'
 varnames = ['T2M','SLP','Z500','Z50','U200','U10']
 runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
@@ -54,14 +55,27 @@ for v in range(len(varnames)):
                                                    'surface',False,True)
         
     ### Retrieve time period of interest
-    modq = np.empty((len(runnamesm),ensembles,era.shape[0]-1,era.shape[2],
-                       era.shape[3]))
-    for i in range(len(runnamesm)):
-        for j in range(ensembles):
-            modq[i,j,:,:,:] = UT.calcDecJanFeb(models[i,j,:,:,:],
-                                                lat,lon,'surface',1)
-    eraq = UT.calcDecJanFeb(era,lat,lon,'surface',1)
-    
+    if period == 'DJF':  
+        modq = np.empty((len(runnamesm),ensembles,era.shape[0]-1,era.shape[2],
+                           era.shape[3]))
+        for i in range(len(runnamesm)):
+            for j in range(ensembles):
+                modq[i,j,:,:,:] = UT.calcDecJanFeb(models[i,j,:,:,:],
+                                                    lat,lon,'surface',1)
+        eraq = UT.calcDecJanFeb(era,lat,lon,'surface',1)
+    elif period == 'ND':
+        modq = np.nanmean(models[:,:,:,-2:,:,:],axis=3)
+        eraq = np.nanmean(era[:,-2:,:,:],axis=1)
+    elif period == 'FM':
+        modq = np.nanmean(models[:,:,:,1:3,:,:],axis=3)
+        eraq = np.nanmean(era[:,1:3,:,:],axis=1)   
+    elif period == 'JJA':
+        modq = np.nanmean(models[:,:,:,5:8,:,:],axis=3)
+        eraq = np.nanmean(era[:,5:8,:,:],axis=1)   
+    elif period == 'Annual':
+        modq = np.nanmean(models[:,:,:,:,:,:],axis=3)
+        eraq = np.nanmean(era[:,:,:,:],axis=1)           
+        
     ### Calculate the trend for WACCM
     yearmn = 2005
     yearmx = 2014
@@ -78,7 +92,7 @@ for v in range(len(varnames)):
     dectrend = modtrend * 10.
         
     ### Calculate the trend for ERA-Interim
-    retrend = UT.detrendDataR(eraq,years,'surface',yearmn,yearmx)
+    retrend = UT.detrendDataR(eraq,years,'surface',yearmn,yearmx)[0]
     
     #### Calculate decadal trend
     redectrend = retrend * 10.
