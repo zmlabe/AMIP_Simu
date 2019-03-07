@@ -19,7 +19,7 @@ import read_Reanalysis as MOR
 import calc_Utilities as UT
 
 ### Define directories
-directoryfigure = '/home/zlabe/Desktop/'
+directoryfigure = '/home/zlabe/Desktop/Trends/Trends_ON/'
 
 ### Define time           
 now = datetime.datetime.now()
@@ -28,7 +28,7 @@ currentdy = str(now.day)
 currentyr = str(now.year)
 currenttime = currentmn + '_' + currentdy + '_' + currentyr
 titletime = currentmn + '/' + currentdy + '/' + currentyr
-print('\n' '----Plotting WACC T2M Trends - %s----' % titletime)
+print('\n' '----Plotting WACC Variable Trends - %s----' % titletime)
 
 #### Alott time series
 year1 = 1979
@@ -38,7 +38,7 @@ years = np.arange(year1,year2+1,1)
 ### Add parameters
 ensembles = 10
 su = [0,1,2,3,5,6,7]
-period = 'Annual'
+period = 'ON'
 varnames = ['T2M','SLP','Z500','Z50','U200','U10']
 runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
@@ -63,6 +63,27 @@ for v in range(len(varnames)):
                 modq[i,j,:,:,:] = UT.calcDecJanFeb(models[i,j,:,:,:],
                                                     lat,lon,'surface',1)
         eraq = UT.calcDecJanFeb(era,lat,lon,'surface',1)
+    elif period == 'JF':
+        modq = np.nanmean(models[:,:,:,0:2,:,:],axis=3)
+        eraq = np.nanmean(era[:,0:2,:,:],axis=1)
+    elif period == 'ON':
+        modq = np.nanmean(models[:,:,:,9:11,:,:],axis=3)
+        eraq = np.nanmean(era[:,9:11,:,:],axis=1)
+    elif period == 'OND':
+        modq = np.nanmean(models[:,:,:,-3:,:,:],axis=3)
+        eraq = np.nanmean(era[:,-3:,:,:],axis=1)
+    elif period == 'S':
+        modq = models[:,:,:,-4,:,:].squeeze()
+        eraq = era[:,-4,:,:].squeeze()
+    elif period == 'O':
+        modq = models[:,:,:,-3,:,:].squeeze()
+        eraq = era[:,-3,:,:].squeeze()
+    elif period == 'N':
+        modq = models[:,:,:,-2,:,:].squeeze()
+        eraq = era[:,-2,:,:].squeeze()
+    elif period == 'D':
+        modq = models[:,:,:,-1:,:,:].squeeze()
+        eraq = era[:,-1:,:,:].squeeze()
     elif period == 'ND':
         modq = np.nanmean(models[:,:,:,-2:,:,:],axis=3)
         eraq = np.nanmean(era[:,-2:,:,:],axis=1)
@@ -71,14 +92,17 @@ for v in range(len(varnames)):
         eraq = np.nanmean(era[:,1:3,:,:],axis=1)   
     elif period == 'JJA':
         modq = np.nanmean(models[:,:,:,5:8,:,:],axis=3)
-        eraq = np.nanmean(era[:,5:8,:,:],axis=1)   
+        eraq = np.nanmean(era[:,5:8,:,:],axis=1) 
+    elif period == 'AMJ':
+        modq = np.nanmean(models[:,:,:,3:6,:,:],axis=3)
+        eraq = np.nanmean(era[:,3:6,:,:],axis=1) 
     elif period == 'Annual':
         modq = np.nanmean(models[:,:,:,:,:,:],axis=3)
         eraq = np.nanmean(era[:,:,:,:],axis=1)           
         
     ### Calculate the trend for WACCM
     yearmn = 2005
-    yearmx = 2014
+    yearmx = 2015
     sliceq = np.where((years >= yearmn) & (years <= yearmx))[0]    
     
     modtrend = np.empty((len(runnamesm),ensembles,models.shape[4],

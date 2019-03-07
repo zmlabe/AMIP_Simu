@@ -1,7 +1,7 @@
 """
 Script calculates and plots pattern correlations for various variables.
 Correlations are computed between ERA-Interim and the model experiments.
-This script plots over the Arctic Amplification period (AA; last 15 years).
+This script plots over the Arctic Amplification period (AA; last 10 years).
 
 Notes
 -----
@@ -41,7 +41,7 @@ years = np.arange(year1,year2+1,1)
 ensembles = 10
 yearsnumber = 15
 su = [0,1,2,3,5,6,7]
-period = 'JJA'
+period = 'Annual'
 varnames = ['SLP','Z500','U200','U10','T2M',]
 runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
@@ -76,6 +76,9 @@ def readVar(varnames,runnamesm,period):
     elif period == 'JJA':
         modq = np.nanmean(models[:,:,:,5:8,:,:],axis=3)
         eraq = np.nanmean(era[:,5:8,:,:],axis=1)  
+    elif period == 'Annual':
+        modq = np.nanmean(models[:,:,:,:,:,:],axis=3)
+        eraq = np.nanmean(era[:,:,:,:],axis=1)  
     elif period == 'DJF':
         modq = np.empty((len(runnamesm),ensembles,era.shape[0]-1,era.shape[2],
                            era.shape[3]))
