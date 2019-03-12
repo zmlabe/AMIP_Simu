@@ -192,7 +192,7 @@ def readDataR(variable,level,detrend,sliceeq):
     elif variable == 'SWE':
         var = var*1000. # Meters to Millimeters 
         print('Completed: Changed units (m to mm)!')
-    elif variable in ('Z1000','Z850','Z700','Z500','Z300','Z200','Z50','Z30'):
+    elif variable in ('Z1000','Z850','Z700','Z500','Z300','Z200','Z50','Z30','THICK'):
         var = var/9.80665 # m^2/s^2 divide by gravity m/s^2 to m
         print('Completed: Changed units (m^2/s^2 to m)!')
     elif variable == 'SLP':

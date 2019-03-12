@@ -18,9 +18,6 @@ import read_MonthlyData as MOM
 import read_Reanalysis as MOR
 import calc_Utilities as UT
 
-### Define directories
-directoryfigure = '/home/zlabe/Desktop/Trends/Trends_ON/'
-
 ### Define time           
 now = datetime.datetime.now()
 currentmn = str(now.month)
@@ -38,10 +35,14 @@ years = np.arange(year1,year2+1,1)
 ### Add parameters
 ensembles = 10
 su = [0,1,2,3,5,6,7]
-period = 'ON'
+period = 'AMJ'
 varnames = ['T2M','SLP','Z500','Z50','U200','U10']
+varnames = ['THICK']
 runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
+
+### Define directories
+directoryfigure = '/home/zlabe/Desktop/Trends/Trends_%s/' % period
 
 for v in range(len(varnames)):
     ### Call function to read in ERA-Interim
@@ -101,8 +102,8 @@ for v in range(len(varnames)):
         eraq = np.nanmean(era[:,:,:,:],axis=1)           
         
     ### Calculate the trend for WACCM
-    yearmn = 2005
-    yearmx = 2015
+    yearmn = 1980
+    yearmx = 2014
     sliceq = np.where((years >= yearmn) & (years <= yearmx))[0]    
     
     modtrend = np.empty((len(runnamesm),ensembles,models.shape[4],
@@ -176,6 +177,11 @@ for v in range(len(varnames)):
         barlim = np.arange(-3,4,3)
         cmap = cmocean.cm.balance
         label = r'\textbf{hPa decade$^{-1}$}'
+    elif varnames[v] == 'THICK':
+        limit = np.arange(-20,20.1,1)
+        barlim = np.arange(-20,21,5)
+        cmap = cmocean.cm.balance
+        label = r'\textbf{m decade$^{-1}$}'
         
     fig = plt.figure(figsize=(6,5))
     for i in range(len(runnames)):
@@ -197,14 +203,9 @@ for v in range(len(varnames)):
         lon2d, lat2d = np.meshgrid(lons_cyclic, lat)
         x, y = m(lon2d, lat2d)
            
-        if i == 0:
-            circle = m.drawmapboundary(fill_color='white',color='k',
-                              linewidth=3)
-            circle.set_clip_on(False)
-        else:
-            circle = m.drawmapboundary(fill_color='white',color='dimgray',
-                              linewidth=0.7)
-            circle.set_clip_on(False)
+        circle = m.drawmapboundary(fill_color='white',color='dimgray',
+                          linewidth=0.7)
+        circle.set_clip_on(False)
         
         cs = m.contourf(x,y,var,limit,extend='both')
         cs1 = m.contourf(x,y,pvar,colors='None',hatches=['....'],
