@@ -100,11 +100,21 @@ lat,lon,sic = readSIEData()
 lon2,lat2 = np.meshgrid(lon,lat)
 ext = calcExtent(sic,lat2)
 
-### Calculate zscores
+### Detrend data
 extdt = sss.detrend(ext,axis=0,type='linear')
+
+### Calculate zscores
 extdtzz = sts.zscore(extdt,axis=0)
 extzz = sts.zscore(ext,axis=0)
+
+### Calculate standard deviation
 extstd = np.std(ext,axis=0)
+
+### Calculate OND sea ice index
+extond = np.nanmean(ext[:,-3:],axis=1)
+extondzz = sts.zscore(extond,axis=0)
+iceslice_ond = np.where(extondzz <= -1.)[0]
+yearslice_ond = years[iceslice_ond]
 
 ### Save data files
 np.savetxt(directoryoutput + 'Monthly_SeaIceExtent.txt',
@@ -115,6 +125,12 @@ np.savetxt(directoryoutput + 'Monthly_SeaIceExtent_ZScore_Detrended.txt',
            extdtzz.ravel())
 np.savetxt(directoryoutput + 'Monthly_SeaIceExtent_STD.txt',
            extstd.ravel())
+np.savetxt(directoryoutput + 'OND_SeaIceExtent.txt',
+           extond)
+np.savetxt(directoryoutput + 'OND_SeaIceExtent_ZScore.txt',
+           extondzz)
+np.savetxt(directoryoutput + 'OND_SeaIceExtent_1SigmaYears.txt',
+           np.c_[yearslice_ond,iceslice_ond])
 
 ### Create temporary figures
 plt.rc('text',usetex=True)
