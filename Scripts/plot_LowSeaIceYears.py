@@ -17,10 +17,6 @@ import read_MonthlyData as MOM
 import read_Reanalysis as MOR
 import calc_Utilities as UT
 
-### Define directories
-directoryfigure = '/home/zlabe/Desktop/LowSeaIceYears_D/'
-directorydata = '/home/zlabe/Documents/Research/AMIP/Data/'
-
 ### Define time           
 now = datetime.datetime.now()
 currentmn = str(now.month)
@@ -39,21 +35,35 @@ years = np.arange(year1,year2+1,1)
 ensembles = 10
 su = [0,1,2,3,5,6,7]
 period = 'D'
-varnames = ['SLP','Z500','U200','U10','T2M','THICK']
+iceindex = 'ON'
+BK = True
+varnames = ['SLP','Z500','U200','U10','T2M','THICK','SST']
 runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 
+### Define directories
+if BK == True:
+    directoryfigure = '/home/zlabe/Desktop/BK_LowSeaIceYears_%s_index/' % iceindex
+else:
+    directoryfigure = '/home/zlabe/Desktop/LowSeaIceYears_%s/' % iceindex
+directorydata = '/home/zlabe/Documents/Research/AMIP/Data/'
+
 for rr in range(len(varnames)):
     def readVar(varnames,runnamesm,period):
+        if varnames == 'SST':
+            world = False
+        else:
+            world = True
+        
         ### Call function to read in ERA-Interim (detrended)
-        lat,lon,time,lev,era = MOR.readDataR(varnames,'surface',True,True)
+        lat,lon,time,lev,era = MOR.readDataR(varnames,'surface',True,world)
         
         ### Call functions to read in WACCM data (detrended)
         models = np.empty((len(runnamesm),ensembles,era.shape[0],era.shape[1],
                            era.shape[2],era.shape[3]))
         for i in range(len(runnamesm)):
             lat,lon,time,lev,models[i] = MOM.readDataM(varnames,runnamesm[i],
-                                                       'surface',True,True)
+                                                       'surface',True,world)
         
         return models,era,lat,lon
     
@@ -61,7 +71,11 @@ for rr in range(len(varnames)):
     mod,era,lat,lon = readVar(varnames[rr],runnamesm,period)
     
     ### Read in low sea ice year slices
-    yearslice,iceslice = np.genfromtxt(directorydata + 'OND_SeaIceExtent_1SigmaYears.txt',
+    if BK == True:
+        fileslice = '%s_B-KSeas_SeaIceExtent_1SigmaYears.txt' % iceindex
+    else:
+        fileslice = '%s_SeaIceExtent_1SigmaYears.txt' % iceindex
+    yearslice,iceslice = np.genfromtxt(directorydata + fileslice,
                                        unpack=True)
     yearslice = yearslice.astype(int)
     iceslice = iceslice.astype(int)
@@ -80,8 +94,14 @@ for rr in range(len(varnames)):
         eraanom = np.nanmean(eraanomq[:,-2:,:,:],axis=1)
         modanom = np.nanmean(modanomq[:,:,:,-2:,:,:],axis=3)
     elif period == 'D':
-        eraanom = np.nanmean(eraanomq[:,-1:,:,:],axis=1)
-        modanom = np.nanmean(modanomq[:,:,:,-1:,:,:],axis=3)
+        eraanom = eraanomq[:,-1:,:,:].squeeze()
+        modanom = modanomq[:,:,:,-1:,:,:].squeeze()
+    elif period == 'F':
+        eraanom = eraanomq[:,1,:,:].squeeze()
+        modanom = modanomq[:,:,:,1,:,:].squeeze()
+    elif period == 'JFM':
+        eraanom = np.nanmean(eraanomq[:,0:3,:,:],axis=1)
+        modanom = np.nanmean(modanomq[:,:,:,0:3,:,:],axis=3)
     elif period == 'DJF':  
         modanom = np.empty((len(runnamesm),ensembles,modanomq.shape[2]-1,
                          modanomq.shape[4],modanomq.shape[5]))
@@ -143,6 +163,11 @@ for rr in range(len(varnames)):
         barlim = np.arange(-20,21,5)
         cmap = cmocean.cm.balance
         label = r'\textbf{m}'
+    elif varnames[rr] == 'SST':
+        limit = np.arange(-1,1.01,0.05)
+        barlim = np.arange(-1,2,1)
+        cmap = cmocean.cm.balance
+        label = r'\textbf{$^{\circ}$C}'
     fig = plt.figure(figsize=(6,5))
     for i in range(len(runnames)):
         if i == 0:
@@ -153,8 +178,12 @@ for rr in range(len(varnames)):
     #        pvar = pmodel[i-1]
         
         ax1 = plt.subplot(3,4,su[i]+1)
-        m = Basemap(projection='ortho',lon_0=0,lat_0=89,resolution='l',
-                    area_thresh=10000.)
+        
+        if varnames[rr] == 'SST':
+            m = Basemap(projection='moll',lon_0=0,resolution='l')   
+        else:
+            m = Basemap(projection='ortho',lon_0=0,lat_0=89,resolution='l',
+                        area_thresh=10000.)
         
         var, lons_cyclic = addcyclic(var, lon)
         var, lons_cyclic = shiftgrid(180., var, lons_cyclic, start=False)
@@ -172,6 +201,8 @@ for rr in range(len(varnames)):
     #                     linewidths=0.4)
                   
         m.drawcoastlines(color='dimgray',linewidth=0.7)
+        if varnames[rr] == 'SST':
+            m.fillcontinents(color='dimgray')
                 
         cs.set_cmap(cmap) 
         ax1.annotate(r'\textbf{%s}' % runnames[i],xy=(0,0),xytext=(0.865,0.91),
