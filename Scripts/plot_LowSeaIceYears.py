@@ -34,7 +34,7 @@ years = np.arange(year1,year2+1,1)
 ### Add parameters
 ensembles = 10
 su = [0,1,2,3,5,6,7]
-period = 'D'
+period = 'ND'
 iceindex = 'ON'
 BK = True
 varnames = ['SLP','Z500','U200','U10','T2M','THICK','SST']

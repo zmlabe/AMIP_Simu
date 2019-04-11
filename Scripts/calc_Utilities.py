@@ -18,6 +18,7 @@ Usage
     [8] calc_spatialCorrHeightLev(varx,vary,lats,lons,weight,levelq)
     [9] detrendData(datavar,years,level,yearmn,yearmx)
     [10] detrendDataR(datavar,years,level,yearmn,yearmx)
+    [11] mk_test(x, alpha)
 """
 
 def calcDecJan(varx,vary,lat,lon,level,levsq):

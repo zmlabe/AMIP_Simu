@@ -119,7 +119,7 @@ def readVar(varnames,slicegrid,region):
     return eraanom, modelanom
 
 ### Read in data
-region = 'NH'
+region = 'Arctic'
 eraanom,modelanom = readVar(varnames[0],True,region)
     
 corrs = np.empty((modelanom.shape[0]))
