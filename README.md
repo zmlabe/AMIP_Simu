@@ -1,5 +1,5 @@
 # AMIP Experiments
-Conducting a series of six AMIP-style simulations using a high-top AGCM (WACCM4), we explore the role of various forcings and their linear interference (including sea ice, SST, Eurasian snow cover, and the QBO) on the large-scale circulation response in the last ~40 years. We also address the relative importance of the stratospheric pathway on the dynamical response to recent Arctic Amplification (1979-2016).
+Conducting a series of six AMIP-style simulations using a high-top AGCM (WACCM4), we explore the role of various forcings and their linear interference (including sea ice, SST, Eurasian snow cover, and the QBO) on the large-scale circulation response in the last ~40 years. We focus on their potential predictability and also address the relative importance of the stratospheric pathway on the dynamical response to recent Arctic Amplification (1979-2016).
 
 ###### Under construction... ```[Python 3.6]```
 
