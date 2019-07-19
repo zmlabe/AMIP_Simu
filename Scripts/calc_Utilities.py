@@ -10,15 +10,16 @@ Usage
 -----
     [1] calcDecJan(varx,vary,lat,lon,level,levsq)
     [2] calcDecJanFeb(varx,vary,lat,lon,level,levsq)
-    [3] calc_indttest(varx,vary)
-    [4] calc_weightedAve(var,lats)
-    [5] calc_spatialCorr(varx,vary,lats,lons,weight)
-    [6] calc_RMSE(varx,vary,lats,lons,weight)
-    [7] calc_spatialCorrHeight(varx,vary,lats,lons,weight)
-    [8] calc_spatialCorrHeightLev(varx,vary,lats,lons,weight,levelq)
-    [9] detrendData(datavar,years,level,yearmn,yearmx)
-    [10] detrendDataR(datavar,years,level,yearmn,yearmx)
-    [11] mk_test(x, alpha)
+    [3] calc_FDR_ttest(varx,vary,alpha_f)
+    [4] calc_indttest(varx,vary)
+    [5] calc_weightedAve(var,lats)
+    [6] calc_spatialCorr(varx,vary,lats,lons,weight)
+    [7] calc_RMSE(varx,vary,lats,lons,weight)
+    [8] calc_spatialCorrHeight(varx,vary,lats,lons,weight)
+    [9] calc_spatialCorrHeightLev(varx,vary,lats,lons,weight,levelq)
+    [10] detrendData(datavar,years,level,yearmn,yearmx)
+    [11] detrendDataR(datavar,years,level,yearmn,yearmx)
+    [12] mk_test(x, alpha)
 """
 
 def calcDecJan(varx,vary,lat,lon,level,levsq):
@@ -191,6 +192,67 @@ def calcDecJanFeb(varx,lat,lon,level,levsq):
 
     print('*Completed: Finished calcDecJanFeb function!')
     return varx_djf
+
+###############################################################################
+###############################################################################
+###############################################################################
+    
+def calc_FDR_ttest(varx,vary,alpha_f):
+    """
+    Function first calculates statistical difference for 2 independent
+    sample t-test and then adjusts using a false discovery rate (FDR)
+    where alpha_o = alpha_FDR
+
+    Parameters
+    ----------
+    varx : 2d or 3d array
+    vary : 2d or 3d array
+    alpha_f : float (alpha_o = alpha_FDR)
+    
+    Returns
+    -------
+    pruns : 1d or 2d array of adjusted p values
+
+    Usage
+    -----
+    calc_FDR_ttest(varx,vary,alpha_f)
+    """
+    print('\n>>> Using calc_FDR_ttest function!')
+    
+    ### Import modules
+    import numpy as np
+    import scipy.stats as sts
+    import statsmodels.stats.multitest as fdr
+    
+    ### 2-independent sample t-test
+    stat,pvalue = sts.ttest_ind(varx,vary,nan_policy='omit')
+    
+    ### Ravel all 2d pvalues
+    if pvalue.ndim == 2:
+        pvalall = np.reshape(pvalue,(pvalue.shape[0]* pvalue.shape[1]))
+    else:
+        pvalall = pvalue
+    
+    ### Calculate false discovery rate
+    prunsq = np.empty((pvalall.shape))
+    score = np.empty((pvalall.shape))
+    prunsq.fill(np.nan)
+    score.fill(np.nan)
+    
+    ### Check for nans before correction!!
+    mask = np.isfinite(pvalall[:])
+    score[mask],prunsq[mask] = fdr.fdrcorrection(pvalall[mask],alpha=alpha_f,
+                                      method='indep')
+        
+    ### Reshape into correct dimensions
+    pruns = np.reshape(prunsq,(pvalue.shape))
+    
+    ### Mask variables by their adjusted p-values
+    pruns[np.where(pruns >= alpha_f)] = np.nan
+    pruns[np.where(pruns < alpha_f)] = 1.
+    
+    print('*Completed: Finished calc_FDR_ttest function!')
+    return pruns
 
 ###############################################################################
 ###############################################################################
@@ -834,3 +896,7 @@ def mk_test(x, alpha):
         p = 1.
 
     return trend, h, p, z
+
+###############################################################################
+###############################################################################
+###############################################################################

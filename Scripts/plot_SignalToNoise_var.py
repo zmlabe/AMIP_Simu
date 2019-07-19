@@ -34,7 +34,7 @@ years = np.arange(year1,year2+1,1)
 ### Add parameters
 ensembles = 10
 su = [0,1,2,3,5,6,7]
-period = 'JJA'
+period = 'JFM'
 varnames = ['T2M','SLP','Z500','Z50','U200','U10','THICK']
 runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
