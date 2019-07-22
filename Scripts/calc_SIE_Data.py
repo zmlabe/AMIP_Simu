@@ -131,6 +131,16 @@ yearslice1_d = years[iceslice1_d]
 iceslice2_d = np.where(extdzz <= -2.)[0]
 yearslice2_d = years[iceslice2_d]
 
+### Calculate S sea ice index
+extsep = ext[:,8]
+extsepzz = sts.zscore(extsep,axis=0)
+iceslice05_sep = np.where(extsepzz <= -0.5)[0]
+yearslice05_sep = years[iceslice05_sep]
+iceslice1_sep = np.where(extsepzz <= -1.)[0]
+yearslice1_sep = years[iceslice1_sep]
+iceslice2_sep = np.where(extsepzz <= -2.)[0]
+yearslice2_sep = years[iceslice2_sep]
+
 ### Calculate JFM sea ice index
 extjfm = np.nanmean(ext[:,0:3],axis=1)
 extjfmzz = sts.zscore(extjfm,axis=0)
@@ -150,6 +160,10 @@ np.savetxt(directoryoutput + 'Monthly_SeaIceExtent_ZScore_Detrended.txt',
            extdtzz.ravel())
 np.savetxt(directoryoutput + 'Monthly_SeaIceExtent_STD.txt',
            extstd.ravel())
+
+### Save data files
+np.savetxt(directoryoutput + 'Annual_SeaIceExtent.txt',
+           np.nanmean(ext,axis=1))
 
 ### Save OND file
 np.savetxt(directoryoutput + 'OND_SeaIceExtent.txt',
@@ -174,6 +188,18 @@ np.savetxt(directoryoutput + 'D_SeaIceExtent_1SigmaYears.txt',
            np.c_[yearslice1_d,iceslice1_d])
 np.savetxt(directoryoutput + 'D_SeaIceExtent_2SigmaYears.txt',
            np.c_[yearslice2_d,iceslice2_d])
+
+### Save S file
+np.savetxt(directoryoutput + 'S_SeaIceExtent.txt',
+           extsep)
+np.savetxt(directoryoutput + 'S_SeaIceExtent_ZScore.txt',
+           extsepzz)
+np.savetxt(directoryoutput + 'S_SeaIceExtent_05SigmaYears.txt',
+           np.c_[yearslice05_sep,iceslice05_sep])
+np.savetxt(directoryoutput + 'S_SeaIceExtent_1SigmaYears.txt',
+           np.c_[yearslice1_sep,iceslice1_sep])
+np.savetxt(directoryoutput + 'S_SeaIceExtent_2SigmaYears.txt',
+           np.c_[yearslice2_sep,iceslice2_sep])
 
 ### Save JFM file
 np.savetxt(directoryoutput + 'JFM_SeaIceExtent.txt',
