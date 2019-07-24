@@ -1,10 +1,10 @@
 """
-Script calculates regressions on snow cover index (SWE!!!) for only models
+Script calculates regressions on snow cover area (SNA) index for only models
 
 Notes
 -----
     Author : Zachary Labe
-    Date   : 22 July 2019
+    Date   : 23 July 2019
 """
 
 ### Import modules
@@ -25,7 +25,7 @@ currentdy = str(now.day)
 currentyr = str(now.year)
 currenttime = currentmn + '_' + currentdy + '_' + currentyr
 titletime = currentmn + '/' + currentdy + '/' + currentyr
-print('\n' '----Plotting SCI Year Regressions - %s----' % titletime)
+print('\n' '----Plotting Snow Area Year Regressions - %s----' % titletime)
 
 #### Alott time series
 year1 = 1979
@@ -34,16 +34,16 @@ years = np.arange(year1,year2+1,1)
 
 ### Add parameters
 ensembles = 10
-period = 'OND' # period for regression
-DT = False
+period = 'DJF' # period for regression
+DT = True
 varnames = ['SLP','Z500','U200','Z50','T2M','THICK','SST']
 runnames = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 
 ### Define directories
 if DT == True:
-    directoryfigure = '/home/zlabe/Desktop/RegressionSWE_dt/'
+    directoryfigure = '/home/zlabe/Desktop/RegressionSNA_Oct_dt/'
 elif DT == False:
-    directoryfigure = '/home/zlabe/Desktop/RegressionSWE/'
+    directoryfigure = '/home/zlabe/Desktop/RegressionSNA/'
 else:
     print(ValueError('WRONG Arguement!'))
 directorydata = '/home/zlabe/Documents/Research/AMIP/Data/'
@@ -158,18 +158,18 @@ for rr in range(len(varnames)):
     ### Read in data from simulations and ERA-Interim
     mod,lat,lon = readVar(varnames[rr],runnames,period)
     
-    ### Read in snow cover years (Oct-Nov index)
+    ### Read in snow cover area years (Oct-Nov index)
     if DT == True:
-        fileindex = 'SWE_Eurasia_ON_DETRENDED.txt'
+        fileindex = 'SNA_Eurasia_O_DETRENDED.txt'
     elif DT == False:
-        fileindex = 'SWE_Eurasia_ON.txt'
+        fileindex = 'SNA_Eurasia_O.txt'
     else:
         print(ValueError('WRONG Arguement!'))
         
     ### Read data
     snowdata = np.genfromtxt(directorydata + fileindex,unpack=True,
                              delimiter=',')
-    snowindex = snowdata[1:,:]
+    snowindex = snowdata[1:,:] # remove first column of years
     
     ### Calculate anomalies
     modmean = np.nanmean(mod,axis=2)
@@ -306,7 +306,7 @@ for rr in range(len(varnames)):
     plt.subplots_adjust(hspace=0.01)
     plt.subplots_adjust(bottom=0.16)
     
-    plt.savefig(directoryfigure + '%s/RegressionSnow_%s_%s.png' % (period,
+    plt.savefig(directoryfigure + '%s/RegressionSNA_%s_%s.png' % (period,
                                                                    varnames[rr],
                                                                    period),
                                                                     dpi=300)

@@ -25,7 +25,7 @@ currentdy = str(now.day)
 currentyr = str(now.year)
 currenttime = currentmn + '_' + currentdy + '_' + currentyr
 titletime = currentmn + '/' + currentdy + '/' + currentyr
-print('\n' '----Plotting SCI Year Regressions - %s----' % titletime)
+print('\n' '----Plotting SNC Year Regressions - %s----' % titletime)
 
 #### Alott time series
 year1 = 1979

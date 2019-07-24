@@ -60,6 +60,9 @@ def readDataR(variable,level,detrend,sliceeq):
     months = 12
     years = np.arange(1979,2016+1,1)
     
+    if variable == 'SNC':
+        years = np.arange(1979,2015+1,1)
+    
     ### Directory for experiments (remote server - Seley)
     directorydata = '/seley/zlabe/ERAI/'
     
@@ -68,13 +71,21 @@ def readDataR(variable,level,detrend,sliceeq):
     ###########################################################################
     ### Read in lat,lon,time from known file 
     if level == 'surface': # 3d variables
-        dataq = Dataset(directorydata + 'T2M_1979-2016.nc')
-        time = dataq.variables['time'][:]
-        lev = 'surface'
-        lat = dataq.variables['latitude'][:]
-        lon = dataq.variables['longitude'][:]
-        dataq.close()
-        
+        if variable == 'SNC': # Snow data only through 2015!
+            dataq = Dataset(directorydata + 'SNC_1979-2016.nc') # 1979-2015
+            time = dataq.variables['time'][:]
+            lev = 'surface'
+            lat = dataq.variables['latitude'][:]
+            lon = dataq.variables['longitude'][:]
+            dataq.close()
+        else:
+            dataq = Dataset(directorydata + 'T2M_1979-2016.nc')
+            time = dataq.variables['time'][:]
+            lev = 'surface'
+            lat = dataq.variables['latitude'][:]
+            lon = dataq.variables['longitude'][:]
+            dataq.close()
+
     ###########################################################################
     ###########################################################################                 
         if sliceeq == False:

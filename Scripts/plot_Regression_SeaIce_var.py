@@ -1,10 +1,10 @@
 """
-Script calculates regressions on snow cover index (SWE!!!) for only models
+Script calculates regressions on sea ice index
 
 Notes
 -----
     Author : Zachary Labe
-    Date   : 22 July 2019
+    Date   : 18 July 2019
 """
 
 ### Import modules
@@ -16,6 +16,7 @@ from mpl_toolkits.basemap import Basemap, addcyclic, shiftgrid
 import read_MonthlyData as MOM
 import read_Reanalysis as MOR
 import calc_Utilities as UT
+import scipy.signal as SS
 import scipy.stats as sts
 
 ### Define time           
@@ -25,40 +26,38 @@ currentdy = str(now.day)
 currentyr = str(now.year)
 currenttime = currentmn + '_' + currentdy + '_' + currentyr
 titletime = currentmn + '/' + currentdy + '/' + currentyr
-print('\n' '----Plotting SCI Year Regressions - %s----' % titletime)
+print('\n' '----Plotting Low Sea Ice Year Regressions - %s----' % titletime)
 
 #### Alott time series
 year1 = 1979
-year2 = 2015
+year2 = 2016
 years = np.arange(year1,year2+1,1)
 
 ### Add parameters
 ensembles = 10
+su = [0,1,2,3,5,6,7]
 period = 'OND' # period for regression
-DT = False
+iceindex = 'S' # period for sea ice
+BK = False
 varnames = ['SLP','Z500','U200','Z50','T2M','THICK','SST']
-runnames = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
+runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
+runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 
 ### Define directories
-if DT == True:
-    directoryfigure = '/home/zlabe/Desktop/RegressionSWE_dt/'
-elif DT == False:
-    directoryfigure = '/home/zlabe/Desktop/RegressionSWE/'
-else:
-    print(ValueError('WRONG Arguement!'))
+if BK == False:
+    directoryfigure = '/home/zlabe/Desktop/RegressionSeaIce_%s/' % iceindex
+elif BK==True:
+    directoryfigure = '/home/zlabe/Desktop/BKRegressionSeaIce_%s/' % iceindex
 directorydata = '/home/zlabe/Documents/Research/AMIP/Data/'
 
 def readVar(varnames,runnamesm,period):
-    """
-    Read in modeled data!
-    """
     if varnames == 'SST':
         world = False
     else:
         world = True
     
     ### Call function to read in ERA-Interim (detrended)
-    lat,lon,time,lev,era = MOR.readDataR('T2M','surface',False,world)
+    lat,lon,time,lev,era = MOR.readDataR(varnames,'surface',True,world)
     
     ### Call functions to read in WACCM data (detrended)
     models = np.empty((len(runnamesm),ensembles,era.shape[0],era.shape[1],
@@ -67,14 +66,11 @@ def readVar(varnames,runnamesm,period):
         lat,lon,time,lev,models[i] = MOM.readDataM(varnames,runnamesm[i],
                                                    'surface',True,world)
     
-    return models,lat,lon
+    return models,era,lat,lon
 
 ###############################################################################
 
-def regressData(x,y,runnamesm):
-    """
-    Regression function!
-    """
+def regressData(x,y,runnamesm):    
     print('\n>>> Using regressData function! \n')
     
     if y.ndim == 5: # 5D array
@@ -89,7 +85,7 @@ def regressData(x,y,runnamesm):
                 for i in range(y.shape[3]):
                     for j in range(y.shape[4]):
                         ### 1D time series for regression
-                        xx = x[model,:]
+                        xx = x
                         yy = y[model,ens,:,i,j]
                         
                         ### Mask data for nans
@@ -113,7 +109,7 @@ def regressData(x,y,runnamesm):
             for i in range(y.shape[2]):
                 for j in range(y.shape[3]):
                     ### 1D time series for regression
-                    xx = x[model,:]
+                    xx = x
                     yy = y[model,:,i,j]
                     
                     ### Mask data for nans
@@ -135,7 +131,7 @@ def regressData(x,y,runnamesm):
         for i in range(y.shape[1]):
             for j in range(y.shape[2]):
                 ### 1D time series for regression
-                xx = x[:]
+                xx = x
                 yy = y[:,i,j]
                 
                 ### Mask data for nans
@@ -154,58 +150,70 @@ def regressData(x,y,runnamesm):
 ###############################################################################
 ###############################################################################
 ### Regression analysis and plotting    
+
 for rr in range(len(varnames)):    
     ### Read in data from simulations and ERA-Interim
-    mod,lat,lon = readVar(varnames[rr],runnames,period)
+    mod,era,lat,lon = readVar(varnames[rr],runnamesm,period)
     
-    ### Read in snow cover years (Oct-Nov index)
-    if DT == True:
-        fileindex = 'SWE_Eurasia_ON_DETRENDED.txt'
-    elif DT == False:
-        fileindex = 'SWE_Eurasia_ON.txt'
+    ### Read in low sea ice year slices
+    if BK == True:
+        fileindex = '%s_B-KSeas_SeaIceExtent.txt' % iceindex
+        print(ValueError('Need to calculate index!'))
     else:
-        print(ValueError('WRONG Arguement!'))
-        
-    ### Read data
-    snowdata = np.genfromtxt(directorydata + fileindex,unpack=True,
-                             delimiter=',')
-    snowindex = snowdata[1:,:]
+        fileindex = '%s_SeaIceExtent.txt' % iceindex
+    iceextent = np.genfromtxt(directorydata + fileindex,unpack=True)
+    
+    ### Detrend sea ice index
+    icedt = SS.detrend(iceextent,type='linear')
+    icedt = icedt * -1 # invert index
     
     ### Calculate anomalies
+    eramean = np.nanmean(era,axis=0)
     modmean = np.nanmean(mod,axis=2)
+    
+    eraanomq = era - eramean
     modanomq = np.empty((mod.shape))
+    
+    ### Slice over month(s) of interest
     for i in range(mod.shape[0]):
         for j in range(mod.shape[1]):
             modanomq[i,j,:,:,:] = mod[i,j,:,:,:,:] - modmean[i,j,:,:,:]
 
-    ### Slice over month(s) of interest   
     if period == 'Annual':
+        eraanom = np.nanmean(eraanomq[:,:,:,:],axis=1)
         modanom = np.nanmean(modanomq[:,:,:,:,:,:],axis=3)            
     if period == 'OND':
+        eraanom = np.nanmean(eraanomq[:,-3:,:,:],axis=1)
         modanom = np.nanmean(modanomq[:,:,:,-3:,:,:],axis=3)
     elif period == 'ND':
+        eraanom = np.nanmean(eraanomq[:,-2:,:,:],axis=1)
         modanom = np.nanmean(modanomq[:,:,:,-2:,:,:],axis=3)
     elif period == 'D':
+        eraanom = eraanomq[:,-1:,:,:].squeeze()
         modanom = modanomq[:,:,:,-1:,:,:].squeeze()
     elif period == 'F':
+        eraanom = eraanomq[:,1,:,:].squeeze()
         modanom = modanomq[:,:,:,1,:,:].squeeze()
     elif period == 'FM':
+        eraanom = eraanomq[:,1:3,:,:].squeeze()
         modanom = modanomq[:,:,:,1:3,:,:].squeeze()
     elif period == 'JFM':
+        eraanom = np.nanmean(eraanomq[:,0:3,:,:],axis=1)
         modanom = np.nanmean(modanomq[:,:,:,0:3,:,:],axis=3)
     elif period == 'DJF':  
-        modanom = np.empty((len(runnames),ensembles,modanomq.shape[2]-1,
+        modanom = np.empty((len(runnamesm),ensembles,modanomq.shape[2]-1,
                          modanomq.shape[4],modanomq.shape[5]))
-        for i in range(len(runnames)):
+        for i in range(len(runnamesm)):
             for j in range(ensembles):
                 modanom[i,j,:,:,:] = UT.calcDecJanFeb(modanomq[i,j,:,:,:],
                                                     lat,lon,'surface',1)
-        snowindex = snowindex[:,:-1]
+        eraanom = UT.calcDecJanFeb(eraanomq,lat,lon,'surface',1)
+        
+        icedt = icedt[:-1]
         
     ### Calculate regression functions
-    modcoeff,modint,modr2,modpval,moderr = regressData(snowindex,
-                                                       modanom[:,:,:-1,:,:],
-                                                       runnames) ### 1979-2015
+    modcoeff,modint,modr2,modpval,moderr = regressData(icedt,modanom,runnamesm)
+    eracoeff,eraint,erar2,erapval,eraerr = regressData(icedt,eraanom,runnamesm)
     
     ### Calculate ensemble mean
     modcoeffm = np.nanmean(modcoeff,axis=1) # [model,ens,lat,lon]
@@ -213,7 +221,7 @@ for rr in range(len(varnames)):
     ###########################################################################
     ###########################################################################
     ###########################################################################
-    ### Plot snow cover regressions
+    ### Plot low sea ice year regressions
     plt.rc('text',usetex=True)
     plt.rc('font',**{'family':'sans-serif','sans-serif':['Avant Garde']}) 
     
@@ -222,47 +230,50 @@ for rr in range(len(varnames)):
         limit = np.arange(-2,2.01,0.05)
         barlim = np.arange(-2,3,1)
         cmap = cmocean.cm.balance
-        label = r'\textbf{$^{\circ}$C/mm}'
+        label = r'\textbf{$^{\circ}$C/$\bf{10^{6}}$ km$\bf{^{2}}$}'
     elif varnames[rr] == 'Z500':
         limit = np.arange(-20,20.1,1)
         barlim = np.arange(-20,21,10)
         cmap = cmocean.cm.balance
-        label = r'\textbf{m/mm}'
+        label = r'\textbf{m/$\bf{10^{6}}$ km$\bf{^{2}}$}'
     elif varnames[rr] == 'Z50':
         limit = np.arange(-50,50.1,1)
         barlim = np.arange(-50,51,25)
         cmap = cmocean.cm.balance
-        label = r'\textbf{m/mm}'
+        label = r'\textbf{m/$\bf{10^{6}}$ km$\bf{^{2}}$'
     elif varnames[rr] == 'U200':
         limit = np.arange(-5,5.1,0.25)
         barlim = np.arange(-5,6,5)
         cmap = cmocean.cm.balance
-        label = r'\textbf{m/s/mm}'
+        label = r'\textbf{m/s/$\bf{10^{6}}$ km$\bf{^{2}}$}'
     elif varnames[rr] == 'U10':
         limit = np.arange(-5,5.1,0.25)
         barlim = np.arange(-5,6,5)
         cmap = cmocean.cm.balance
-        label = r'\textbf{m/s/mm}'
+        label = r'\textbf{m/s/$\bf{10^{6}}$ km$\bf{^{2}}$}'
     elif varnames[rr] == 'SLP':
         limit = np.arange(-3,3.1,0.25)
         barlim = np.arange(-3,4,3)
         cmap = cmocean.cm.balance
-        label = r'\textbf{hPa/mm}'
+        label = r'\textbf{hPa/$\bf{10^{6}}$ km$\bf{^{2}}$}'
     elif varnames[rr] == 'THICK':
         limit = np.arange(-20,20.1,1)
         barlim = np.arange(-20,21,5)
         cmap = cmocean.cm.balance
-        label = r'\textbf{m/mm}'
+        label = r'\textbf{m/$\bf{10^{6}}$ km$\bf{^{2}}$}'
     elif varnames[rr] == 'SST':
         limit = np.arange(-1,1.01,0.05)
         barlim = np.arange(-1,2,1)
         cmap = cmocean.cm.balance
-        label = r'\textbf{$^{\circ}$C/mm}'
-    fig = plt.figure()
+        label = r'\textbf{$^{\circ}$C/$\bf{10^{6}}$ km$\bf{^{2}}$}'
+    fig = plt.figure(figsize=(6,5))
     for i in range(len(runnames)):
-        var = modcoeffm[i,:,:]
+        if i == 0:
+            var = eracoeff
+        else:
+            var = modcoeffm[i-1,:,:]
         
-        ax1 = plt.subplot(2,3,i+1)
+        ax1 = plt.subplot(3,4,su[i]+1)
         
         if varnames[rr] == 'SST':
             m = Basemap(projection='moll',lon_0=0,resolution='l')   
@@ -291,9 +302,9 @@ for rr in range(len(varnames)):
                      rotation=320,ha='center',va='center')
     
     ###########################################################################
-    cbar_ax = fig.add_axes([0.312,0.1,0.4,0.03])                
+    cbar_ax = fig.add_axes([0.412,0.23,0.4,0.03])                
     cbar = fig.colorbar(cs,cax=cbar_ax,orientation='horizontal',
-                        extend='both',extendfrac=0.07,drawedges=False)
+                        extend='max',extendfrac=0.07,drawedges=False)
     
     cbar.set_label(label,fontsize=11,color='dimgrey',labelpad=1.4)  
     
@@ -302,11 +313,8 @@ for rr in range(len(varnames)):
     cbar.ax.tick_params(axis='x', size=.01,labelsize=8)
     cbar.outline.set_edgecolor('dimgrey')
     
-    plt.subplots_adjust(wspace=0)
-    plt.subplots_adjust(hspace=0.01)
-    plt.subplots_adjust(bottom=0.16)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85,wspace=0,hspace=0.01)
     
-    plt.savefig(directoryfigure + '%s/RegressionSnow_%s_%s.png' % (period,
-                                                                   varnames[rr],
-                                                                   period),
-                                                                    dpi=300)
+    plt.savefig(directoryfigure + '%s/RegressionSeaIce_%s_%s.png' % (period,varnames[rr],
+                period),dpi=300)
