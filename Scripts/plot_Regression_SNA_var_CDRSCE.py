@@ -1,11 +1,11 @@
 """
 Script calculates regressions on snow cover area (SNA) index for models
-AND reanalysis
+AND reanalysis using the Global Snow Lab by Rutgers time series (TEST SCRIPT)
 
 Notes
 -----
     Author : Zachary Labe
-    Date   : 24 July 2019
+    Date   : 25 July 2019
 """
 
 ### Import modules
@@ -26,7 +26,7 @@ currentdy = str(now.day)
 currentyr = str(now.year)
 currenttime = currentmn + '_' + currentdy + '_' + currentyr
 titletime = currentmn + '/' + currentdy + '/' + currentyr
-print('\n' '----Plotting Snow Area Year Regressions - %s----' % titletime)
+print('\n' '----Plotting Snow Extent Year Regressions - %s----' % titletime)
 
 #### Alott time series
 year1 = 1979
@@ -36,14 +36,14 @@ years = np.arange(year1,year2+1,1)
 ### Add parameters
 ensembles = 10
 su = [0,1,2,3,5,6,7] # 7 subplots in different arrangement
-period = 'OND' # period for regression
+period = 'DJF' # period for regression
 DT = True # detrend snow cover indices
 varnames = ['SLP','Z500','U200','Z50','T2M','THICK','SST']
 runnames = [r'ERA-I',r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 runnamesm = [r'CSST',r'CSIC',r'AMIP',r'AMQ',r'AMS',r'AMQS']
 
 ### Define directories
-directoryfigure = '/home/zlabe/Desktop/RegressionSNA_All/'
+directoryfigure = '/home/zlabe/Desktop/Snow/Regression_Rutgers/'
 directorydata = '/home/zlabe/Documents/Research/AMIP/Data/'
 
 ### Functions needed
@@ -88,7 +88,7 @@ def regressData(x,y,runnamesm):
                 for i in range(y.shape[3]):
                     for j in range(y.shape[4]):
                         ### 1D time series for regression
-                        xx = x[model,:]
+                        xx = x[:]
                         yy = y[model,ens,:,i,j]
                         
                         ### Mask data for nans
@@ -112,7 +112,7 @@ def regressData(x,y,runnamesm):
             for i in range(y.shape[2]):
                 for j in range(y.shape[3]):
                     ### 1D time series for regression
-                    xx = x[model,:]
+                    xx = x[:]
                     yy = y[model,:,i,j]
                     
                     ### Mask data for nans
@@ -159,18 +159,17 @@ for rr in range(len(varnames)):
     
     ### Read in snow cover area years (Oct-Nov index) (models)
     if DT == True:
-        fileindex = 'SNA_Eurasia_ON_DETRENDED.txt'
+        fileindex = 'SNA_Eurasia_ON_CDRSCE_DETRENDED.txt'
     elif DT == False:
-        fileindex = 'SNA_Eurasia_ON.txt'
+        fileindex = 'SNA_Eurasia_ON_CDRSCE.txt'
     else:
         print(ValueError('WRONG Arguement!'))
-    snowdata = np.genfromtxt(directorydata + fileindex,unpack=True,
-                             delimiter=',')
-    snowarea = snowdata[1:,:] # remove first column of years
+    snowarea = np.genfromtxt(directorydata + fileindex,unpack=True,
+                             delimiter=',')[1] # 1D timeseries
     
     ### Read in snow cover area years (Oct-Nov index) (Reanalysis)
     snowareaarea = np.genfromtxt(directorydata + \
-                'SNA_Eurasia_ON_ERAi_DETRENDED.txt',
+                'SNA_Eurasia_ON_CDRSCE_DETRENDED.txt',
                 unpack=True,delimiter=',')[1] # 1D timeseries
 
     ### Calculate anomalies
@@ -214,7 +213,7 @@ for rr in range(len(varnames)):
                                                     lat,lon,'surface',1)
         eraanom = UT.calcDecJanFeb(eraanomq,lat,lon,'surface',1)
         
-        snowarea = snowarea[:,:-1] # DJF
+        snowarea = snowarea[:-1] # DJF
         snowareaarea = snowareaarea[:-1] #DJF
         
     ### Calculate regression functions
@@ -326,7 +325,7 @@ for rr in range(len(varnames)):
     plt.tight_layout()
     plt.subplots_adjust(top=0.85,wspace=0,hspace=0.01)
     
-    plt.savefig(directoryfigure + '%s/RegressionSNA_%s_%s.png' % (period,
+    plt.savefig(directoryfigure + '%s/RegressionSNA_%s_%s_CDRSCE.png' % (period,
                                                                    varnames[rr],
                                                                    period),
                                                                     dpi=300)
